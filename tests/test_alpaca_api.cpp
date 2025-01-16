@@ -40,8 +40,8 @@ TEST(AlpacaApiTest, TestgetTimeData) {
 
     const std::string symbol = "AAPL";
     const std::string timeframe = "1Min";
-    const std::string start = "2024-12-18T09:30:00-05:00";
-    const std::string end = "2024-12-18T09:40:00-05:00";
+    const std::string start = "2023-12-18T09:30:00-05:00";
+    const std::string end = "2023-12-18T09:40:00-05:00";
     const std::string adjustment = "split";
     const std::string feed = "sip";
     auto timeData = api.getTimeData(symbol, timeframe, start, end, adjustment, feed);

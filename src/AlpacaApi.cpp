@@ -102,22 +102,54 @@ nlohmann::json AlpacaApi::getAssetsByClass(const std::string& assetClass) {
     return nlohmann::json::parse(response);
 }
 
-nlohmann::json AlpacaApi::getTimeData(const std::string& symbol,
+nlohmann::json AlpacaApi::getTimeData(
+    const std::string& symbol,
     const std::string& timeframe,
     const std::string& start,
     const std::string& end,
     const std::string& adjustment,
-    const std::string& feed){
-    std::string endpoint = "/stocks/" + symbol + "/bars";
-    endpoint += "?timeframe=" + timeframe +
-        "&start=" + start +
-        "&end=" + end +
-        "&adjustment=" + adjustment +
-        "&feed=" + feed;
+    const std::string& feed) {
 
-    std::string response = httpGet(endpoint, ALPACA_API_DATA_URL);
-    return nlohmann::json::parse(response);
+    nlohmann::json finalResult = nlohmann::json::array(); // 최종 결과를 저장할 JSON 배열
+    std::string nextPageToken; // next_page_token 값
+    int nextPageIndex = 0;
+    do {
+        // 엔드포인트 URL 구성
+        std::string endpoint = "/stocks/" + symbol + "/bars";
+        endpoint += "?timeframe=" + timeframe +
+                    "&start=" + start +
+                    "&end=" + end +
+                    "&adjustment=" + adjustment +
+                    "&feed=" + feed;
+
+        // next_page_token이 있는 경우 추가
+        if (!nextPageToken.empty()) {
+            endpoint += "&page_token=" + nextPageToken;
+        }
+
+        // HTTP GET 요청
+        std::string response = httpGet(endpoint, ALPACA_API_DATA_URL);
+        nlohmann::json jsonResponse = nlohmann::json::parse(response);
+
+        // 결과 데이터 병합
+        if (jsonResponse.contains("bars") && jsonResponse["bars"].is_array()) {
+            for (const auto& bar : jsonResponse["bars"]) {
+                finalResult.push_back(bar);
+            }
+        }
+
+        // next_page_token 갱신
+        if (jsonResponse.contains("next_page_token") && !jsonResponse["next_page_token"].is_null()) {
+            nextPageToken = jsonResponse["next_page_token"];
+        } else {
+            nextPageToken.clear(); // 더 이상 다음 페이지가 없으면 비웁니다.
+        }
+        nextPageIndex++;
+    } while (!nextPageToken.empty()); // next_page_token이 비어 있을 때까지 계속 요청
+    std::cout<<"Page Number: "<< nextPageIndex <<std::endl;
+    return finalResult;
 }
+
 
 nlohmann::json AlpacaApi::getLatestTrades(const std::string& symbol, const std::string& feed) {
     std::string endpoint = "/stocks/" + symbol + "/trades/latest";
